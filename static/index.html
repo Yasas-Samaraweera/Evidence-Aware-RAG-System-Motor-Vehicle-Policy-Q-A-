@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evidence-Aware RAG System | Motor Vehicle Policy QA</title>
+  <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            padding: 30px;
+            min-height: 600px;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .search-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+
+        .search-section h2 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 1.5em;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            min-height: 120px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 6px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .answer-section {
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            flex: 1;
+        }
+
+        .answer-section h2 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .debug-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+
+        .debug-toggle input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
+
+        .answer-content {
+            line-height: 1.8;
+            font-size: 1.1em;
+            color: #333;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            min-height: 200px;
+        }
+
+        .answer-content.loading {
+            color: #666;
+            font-style: italic;
+        }
+
+        .citation {
+            background: #667eea;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-block;
+            margin: 0 2px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .citation:hover {
+            background: #764ba2;
+            transform: scale(1.1);
+            z-index: 10;
+        }
+
+        .citation.active {
+            background: #ff6b6b;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+        }
+
+        .evidence-panel {
+            background: #fff;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .evidence-panel h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 1.3em;
+        }
+
+        .evidence-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .evidence-table th {
+            background: #667eea;
+            color: white;
+            padding: 12px 8px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        .evidence-table th:first-child {
+            border-top-left-radius: 6px;
+        }
+
+        .evidence-table th:last-child {
+            border-top-right-radius: 6px;
+        }
+
+        .evidence-table td {
+            padding: 12px 8px;
+            border-bottom: 1px solid #e9ecef;
+            word-break: break-word;
+            max-width: 200px;
+        }
+
+        .evidence-table td:first-child {
+            font-family: monospace;
+            font-size: 0.85em;
+            color: #555;
+        }
+
+        .evidence-table tr {
+            transition: background-color 0.2s;
+        }
+
+        .evidence-table tr:hover {
+            background: #f0f4ff;
+            cursor: pointer;
+        }
+
+        .evidence-table tr.selected {
+            background: #e7f3ff;
+            border-left: 3px solid #667eea;
+        }
+
+        .evidence-table tr.empty-state td {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+            font-style: italic;
+        }
+
+        .chunk-viewer {
+            background: #fff;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            min-height: 200px;
+        }
+
+        .chunk-viewer h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 1.3em;
+        }
+
+        .chunk-content {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            line-height: 1.8;
+            font-size: 0.95em;
+            color: #333;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            border-left: 4px solid #667eea;
+            margin-bottom: 10px;
+        }
+
+        .chunk-meta {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .chunk-meta strong {
+            color: #667eea;
+        }
+
+        .highlight {
+            background: #ffd93d;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-style: italic;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #ffe6e6;
+            color: #d32f2f;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            border-left: 4px solid #d32f2f;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+  </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Evidence-Aware RAG System</h1>
+            <p>Motor Vehicle Policy Question & Answering with Citation Evidence</p>
+        </div>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="search-section">
+                    <h2>Ask a Question</h2>
+                    <form id="qaForm">
+                        <div class="form-group">
+                            <label for="question">Your Question:</label>
+                            <textarea 
+                                id="question" 
+                                name="question" 
+                                placeholder="e.g., What are the restrictions for private cars?"
+                                required
+                            ></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="vehicleCategory">Vehicle Category (Optional):</label>
+                            <select id="vehicleCategory" name="vehicleCategory">
+                                <option value="">All Vehicles</option>
+                                <option value="private_car">Private Cars</option>
+                                <option value="motorcycle">Motorcycles</option>
+                                <option value="motor_vehicle">Motor Vehicles (All)</option>
+                            </select>
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="restrictionOnly" name="restrictionOnly">
+                            <label for="restrictionOnly">Restrictions Only</label>
+                        </div>
+
+                        <button type="submit" class="btn" id="submitBtn">
+                            <span id="submitText">Get Answer</span>
+                        </button>
+                    </form>
+                </div>
+
+                <div class="answer-section">
+                    <h2>
+                        Answer
+                        <div class="debug-toggle">
+                            <input type="checkbox" id="debugMode">
+                            <label for="debugMode">Debug Mode</label>
+                        </div>
+                    </h2>
+                    <div id="answerContent" class="answer-content empty-state">
+                        Enter a question above to get started...
+                    </div>
+                    <div id="errorMessage"></div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="evidence-panel">
+                    <h3>📋 Evidence Panel</h3>
+                    <table class="evidence-table" id="evidenceTable">
+                        <thead>
+                            <tr>
+                                <th>Citation</th>
+                                <th>Page</th>
+                                <th>Source</th>
+                            </tr>
+                        </thead>
+                        <tbody id="evidenceTableBody">
+                            <tr>
+                                <td colspan="3" class="empty-state">No evidence yet</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="chunk-viewer">
+                    <h3>📄 Chunk Viewer</h3>
+                    <div id="chunkViewerContent" class="empty-state">
+                        Click a citation or evidence row to view chunk details
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+  <script>
+        const API_BASE = window.location.origin;
+        let currentCitations = {};
+        let currentAnswer = '';
+
+        // Handle form submission
+        document.getElementById('qaForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const question = document.getElementById('question').value.trim();
+            const vehicleCategory = document.getElementById('vehicleCategory').value;
+            const restrictionOnly = document.getElementById('restrictionOnly').checked;
+
+            if (!question) {
+                showError('Please enter a question');
+                return;
+            }
+
+            await fetchAnswer(question, vehicleCategory, restrictionOnly);
+        });
+
+        async function fetchAnswer(question, vehicleCategory, restrictionOnly) {
+            const submitBtn = document.getElementById('submitBtn');
+            const submitText = document.getElementById('submitText');
+            const answerContent = document.getElementById('answerContent');
+            const errorMessage = document.getElementById('errorMessage');
+
+            // Show loading state
+            submitBtn.disabled = true;
+            submitText.innerHTML = '<span class="loading-spinner"></span>Loading...';
+            answerContent.className = 'answer-content loading';
+            answerContent.textContent = 'Analyzing question and retrieving evidence...';
+            errorMessage.innerHTML = '';
+            clearEvidencePanel();
+
+            try {
+                const payload = {
+                    question: question,
+                    vehicle_category: vehicleCategory || null,
+                    restriction_only: restrictionOnly
+                };
+
+                const response = await fetch(`${API_BASE}/qa`, {
+        method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to get answer');
+                }
+
+                const data = await response.json();
+                currentAnswer = data.answer;
+                currentCitations = {};
+
+                // Debug logging
+                console.log('API Response:', data);
+                console.log('Answer:', data.answer);
+                console.log('Citations:', data.citations);
+
+                // Process citations - ensure chunk_id exists and handle edge cases
+                if (data.citations && Array.isArray(data.citations)) {
+                    console.log(`Processing ${data.citations.length} citations...`);
+                    data.citations.forEach((citation, index) => {
+                        if (citation.chunk_id) {
+                            currentCitations[citation.chunk_id] = {
+                                ...citation,
+                                index: index + 1
+                            };
+                            // Also store by normalized key for easier lookup
+                            const normalizedKey = citation.chunk_id.toLowerCase().trim();
+                            if (normalizedKey !== citation.chunk_id) {
+                                currentCitations[normalizedKey] = currentCitations[citation.chunk_id];
+                            }
+                            console.log(`Citation ${index + 1}:`, citation.chunk_id, citation);
+                        } else {
+                            console.warn('Citation missing chunk_id:', citation);
+                        }
+                    });
+                    console.log('Citation map:', currentCitations);
+                } else {
+                    console.warn('Invalid citations format:', data.citations);
+                }
+
+                // Display answer with citations
+                displayAnswer(data.answer, currentCitations);
+
+                // Display evidence panel
+                displayEvidencePanel(data.citations);
+
+            } catch (error) {
+                showError(`Error: ${error.message}`);
+                answerContent.className = 'answer-content empty-state';
+                answerContent.textContent = 'Failed to get answer. Please try again.';
+            } finally {
+                submitBtn.disabled = false;
+                submitText.textContent = 'Get Answer';
+            }
+        }
+
+        function displayAnswer(answer, citations) {
+            const answerContent = document.getElementById('answerContent');
+            answerContent.className = 'answer-content';
+
+            // Create a mapping of all possible chunk ID variations to citation objects
+            const citationMap = {};
+            Object.values(citations).forEach(citation => {
+                if (citation.chunk_id) {
+                    // Store by exact chunk_id
+                    citationMap[citation.chunk_id] = citation;
+                    // Also store by normalized versions (lowercase, no spaces)
+                    const normalized = citation.chunk_id.toLowerCase().trim().replace(/\s+/g, '_');
+                    citationMap[normalized] = citation;
+                    // Store without underscores
+                    const noUnderscore = citation.chunk_id.replace(/_/g, '');
+                    citationMap[noUnderscore] = citation;
+                }
+            });
+
+            // Replace citation markers [chunk_id] with clickable citation badges
+            let html = answer;
+            
+            // First, handle explicit CHUNK_ID format
+            html = html.replace(/\[CHUNK_ID:\s*([^\]]+)\]/gi, (match, chunkId) => {
+                const normalizedId = chunkId.trim();
+                const citation = citationMap[normalizedId] || 
+                               citationMap[normalizedId.toLowerCase()] ||
+                               citationMap[normalizedId.replace(/_/g, '')] ||
+                               findCitationByPartialMatch(normalizedId, citations);
+                if (citation) {
+                    const index = citation.index;
+                    return `<span class="citation" data-chunk-id="${citation.chunk_id}" title="Click to view chunk ${index}">[${index}]</span>`;
+                }
+                return match;
+            });
+
+            // Then match simple bracket patterns [chunk_id]
+            // Use negative lookahead to avoid replacing already processed citations
+            html = html.replace(/\[([^\]]+)\](?!<)/g, (match, chunkId) => {
+                // Skip if it looks like a numbered citation already processed
+                if (/^\d+$/.test(chunkId)) {
+                    return match;
+                }
+                
+                const normalizedId = chunkId.trim();
+                const citation = citationMap[normalizedId] || 
+                               citationMap[normalizedId.toLowerCase()] ||
+                               citationMap[normalizedId.replace(/_/g, '')] ||
+                               findCitationByPartialMatch(normalizedId, citations);
+                if (citation) {
+                    const index = citation.index;
+                    return `<span class="citation" data-chunk-id="${citation.chunk_id}" title="Click to view chunk ${index}">[${index}]</span>`;
+                }
+                return match;
+            });
+
+            answerContent.innerHTML = html;
+
+            // Add click handlers to citations
+            answerContent.querySelectorAll('.citation').forEach(citation => {
+                citation.addEventListener('click', () => {
+                    const chunkId = citation.getAttribute('data-chunk-id');
+                    showChunk(chunkId);
+                    
+                    // Highlight clicked citation
+                    answerContent.querySelectorAll('.citation').forEach(c => c.classList.remove('active'));
+                    citation.classList.add('active');
+                });
+            });
+        }
+
+        // Helper function to find citation by partial match
+        function findCitationByPartialMatch(searchId, citations) {
+            const normalizedSearch = searchId.toLowerCase().trim();
+            for (const [key, citation] of Object.entries(citations)) {
+                if (citation.chunk_id) {
+                    const normalizedKey = citation.chunk_id.toLowerCase().trim();
+                    // Check if search ID is contained in chunk ID or vice versa
+                    if (normalizedKey.includes(normalizedSearch) || 
+                        normalizedSearch.includes(normalizedKey) ||
+                        normalizedKey.replace(/_/g, '').includes(normalizedSearch.replace(/_/g, ''))) {
+                        return citation;
+                    }
+                }
+            }
+            return null;
+        }
+
+        function displayEvidencePanel(citations) {
+            const tbody = document.getElementById('evidenceTableBody');
+            tbody.innerHTML = '';
+
+            if (!citations || citations.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No citations found</td></tr>';
+                return;
+            }
+
+            citations.forEach((citation, index) => {
+                // Skip if citation doesn't have required data
+                if (!citation.chunk_id) {
+                    console.warn('Citation missing chunk_id:', citation);
+                    return;
+                }
+
+                const row = document.createElement('tr');
+                row.dataset.chunkId = citation.chunk_id;
+                row.style.cursor = 'pointer';
+                
+                // Citation ID cell - show short version if too long
+                const citationCell = document.createElement('td');
+                const displayId = citation.chunk_id.length > 30 
+                    ? citation.chunk_id.substring(0, 30) + '...' 
+                    : citation.chunk_id;
+                citationCell.textContent = displayId;
+                citationCell.title = citation.chunk_id; // Full ID on hover
+                
+                // Page cell
+                const pageCell = document.createElement('td');
+                pageCell.textContent = citation.page || 'N/A';
+                pageCell.style.textAlign = 'center';
+                
+                // Source cell - show filename only
+                const sourceCell = document.createElement('td');
+                const sourceText = citation.source || citation.full_source || 'N/A';
+                const filename = sourceText.split('/').pop().split('\\').pop();
+                sourceCell.textContent = filename;
+                sourceCell.title = sourceText; // Full path on hover
+                
+                row.appendChild(citationCell);
+                row.appendChild(pageCell);
+                row.appendChild(sourceCell);
+                
+                row.addEventListener('click', () => {
+                    showChunk(citation.chunk_id);
+                    
+                    // Highlight selected row
+                    tbody.querySelectorAll('tr').forEach(r => r.classList.remove('selected'));
+                    row.classList.add('selected');
+                    
+                    // Also highlight corresponding citation in answer
+                    const answerContent = document.getElementById('answerContent');
+                    answerContent.querySelectorAll('.citation').forEach(c => {
+                        if (c.getAttribute('data-chunk-id') === citation.chunk_id) {
+                            c.classList.add('active');
+                        } else {
+                            c.classList.remove('active');
+                        }
+                    });
+                });
+                
+                // Add hover effect
+                row.addEventListener('mouseenter', () => {
+                    row.style.backgroundColor = '#f0f0f0';
+                });
+                row.addEventListener('mouseleave', () => {
+                    if (!row.classList.contains('selected')) {
+                        row.style.backgroundColor = '';
+                    }
+                });
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        function showChunk(chunkId) {
+            // Try to find citation by exact match first
+            let citation = currentCitations[chunkId];
+            
+            // If not found, try to find by partial match
+            if (!citation) {
+                citation = findCitationByPartialMatch(chunkId, currentCitations);
+            }
+            
+            // If still not found, try to find in all citations (case-insensitive)
+            if (!citation) {
+                const normalizedSearch = chunkId.toLowerCase().trim();
+                for (const [key, cit] of Object.entries(currentCitations)) {
+                    if (cit.chunk_id && cit.chunk_id.toLowerCase().trim() === normalizedSearch) {
+                        citation = cit;
+                        break;
+                    }
+                }
+            }
+
+            const chunkViewer = document.getElementById('chunkViewerContent');
+
+            if (!citation) {
+                chunkViewer.innerHTML = `
+                    <div class="empty-state">
+                        <p>Citation not found for: ${chunkId}</p>
+                        <p style="font-size: 0.9em; margin-top: 10px;">Available citations: ${Object.keys(currentCitations).join(', ')}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const debugMode = document.getElementById('debugMode').checked;
+            
+            let html = '';
+            
+            if (debugMode) {
+                html += `<div class="chunk-meta" style="background: #fff3cd; padding: 10px; border-radius: 4px; margin-bottom: 15px;">`;
+                html += `<strong>🔍 Debug Info:</strong><br>`;
+                html += `Chunk ID: <code>${citation.chunk_id || 'N/A'}</code><br>`;
+                html += `Index: ${citation.index || 'N/A'}<br>`;
+                html += `Full Source: ${citation.full_source || citation.source || 'N/A'}<br>`;
+                if (citation.metadata) {
+                    html += `Metadata: <pre style="font-size: 0.8em; margin-top: 5px;">${JSON.stringify(citation.metadata, null, 2)}</pre>`;
+                }
+                html += `</div>`;
+            }
+
+            html += `<div class="chunk-content">`;
+            
+            // Get content - prefer full content over snippet
+            const content = citation.content || citation.content_snippet;
+            
+            if (content) {
+                // First escape HTML to prevent XSS
+                let displayContent = escapeHtml(content);
+                
+                // Highlight query terms in content (after escaping)
+                const query = document.getElementById('question').value;
+                if (query && query.trim()) {
+                    const queryLower = query.toLowerCase();
+                    const terms = queryLower.split(' ')
+                        .filter(t => t.length > 2)
+                        .filter(t => !['the', 'and', 'are', 'for', 'what', 'are', 'is', 'was', 'can', 'will', 'has', 'have'].includes(t));
+                    
+                    // Escape regex special characters in terms
+                    terms.forEach(term => {
+                        const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        // Use a more robust regex that doesn't break on word boundaries
+                        const regex = new RegExp(`(${escapedTerm})`, 'gi');
+                        displayContent = displayContent.replace(regex, '<span class="highlight">$1</span>');
+                    });
+                }
+                
+                html += displayContent;
+                
+                // Show info if using snippet
+                if (citation.content_snippet && citation.content && citation.content.length > citation.content_snippet.length) {
+                    html += `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 0.85em; color: #666;">`;
+                    html += `<em>Showing snippet (${citation.content_snippet.length} chars). Full content has ${citation.content.length} characters.</em>`;
+                    html += `</div>`;
+                }
+            } else {
+                html += '<div class="empty-state">Content not available for this citation</div>';
+            }
+            
+            html += `</div>`;
+            
+            html += `<div class="chunk-meta" style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #e9ecef;">`;
+            html += `<strong>📄 Page:</strong> ${citation.page || 'N/A'}<br>`;
+            html += `<strong>📁 Source:</strong> ${citation.source || citation.full_source || 'N/A'}`;
+            if (citation.content_snippet && citation.content && citation.content.length > citation.content_snippet.length) {
+                html += `<br><em style="font-size: 0.9em; color: #666;">Showing snippet. Full content available.</em>`;
+            }
+            html += `</div>`;
+
+            chunkViewer.innerHTML = html;
+            
+            // Scroll chunk viewer into view
+            chunkViewer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function clearEvidencePanel() {
+            const tbody = document.getElementById('evidenceTableBody');
+            tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No evidence yet</td></tr>';
+            
+            const chunkViewer = document.getElementById('chunkViewerContent');
+            chunkViewer.innerHTML = 'Click a citation or evidence row to view chunk details';
+            
+            currentCitations = {};
+            currentAnswer = '';
+        }
+
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.innerHTML = `<div class="error-message">${message}</div>`;
+            
+            setTimeout(() => {
+                errorMessage.innerHTML = '';
+            }, 5000);
+        }
+
+        // Debug mode toggle
+        document.getElementById('debugMode').addEventListener('change', () => {
+            if (currentAnswer) {
+                displayAnswer(currentAnswer, currentCitations);
+            }
+            // Update chunk viewer if one is displayed
+            const selectedRow = document.querySelector('.evidence-table tr.selected');
+            if (selectedRow) {
+                showChunk(selectedRow.dataset.chunkId);
+            }
+        });
+  </script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+pinecone API = pcsk_56GEnn_CFtzcNU3te4UKcVM9sQZCBGdZ8s8CtwGCPjdfhzhmvo8anEsnMEzYsepoT5vvnr
+
+python -m uvicorn src.app.api:app --reload --host 0.0.0.0 --port 8000

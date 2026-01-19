@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "FastAPI (Cursor Debug)",
+        "type": "python",
+        "request": "launch",
+        "module": "uvicorn",
+        "args": [
+          "src.app.api:app",
+          "--reload",
+          "--host", "0.0.0.0",
+          "--port", "8000"
+        ],
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        }
+      }
+    ]
+  }
