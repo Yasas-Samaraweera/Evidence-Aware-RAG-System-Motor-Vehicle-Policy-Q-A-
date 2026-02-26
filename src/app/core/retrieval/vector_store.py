@@ -20,12 +20,12 @@ def _get_vector_store() -> PineconeVectorStore:
     """Create a PineconeVectorStore instance configured from settings."""
     settings = get_settings()
 
-    pc = Pinecone(api_key=settings.pinecone_api_key)
+    pc = Pinecone(api_key=settings.pinecone_api_key)  
     index = pc.Index(settings.pinecone_index_name)
 
     embeddings = OpenAIEmbeddings(
         model=settings.openai_embedding_model_name,
-        api_key=settings.openai_api_key,
+        api_key=settings.openai_api_key,  
     )
 
     return PineconeVectorStore(

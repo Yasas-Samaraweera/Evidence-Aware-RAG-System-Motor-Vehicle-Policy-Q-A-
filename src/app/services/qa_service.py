@@ -11,6 +11,76 @@ from ..core.agents.graph import run_qa_flow
 from ..core.agents.utils import extract_citations, build_evidence_map
 
 
+def _infer_vehicle_category(question: str, vehicle_category: Optional[str]) -> Optional[str]:
+    """Infer vehicle category from the natural-language question when not provided.
+
+    This mirrors the frontend behaviour so direct API callers get the same
+    commercial / private / motorcycle routing based on keywords.
+    """
+    if vehicle_category:
+        return vehicle_category
+
+    q = question.lower()
+
+    commercial_terms = [
+        "commercial vehicle",
+        "commercial vehicles",
+        "goods vehicle",
+        "goods vehicles",
+        "goods carrier",
+        "truck",
+        "trucks",
+        "lorry",
+        "lorries",
+        "pickup",
+        "pickup truck",
+        "delivery van",
+        "van",
+        "buses",
+        "bus",
+        "coach",
+        "taxi",
+        "cab",
+        "three wheeler",
+        "3 wheeler",
+    ]
+    if any(term in q for term in commercial_terms):
+        return "motor_vehicle"
+
+    if any(term in q for term in ["motorcycle", "motorbike", "bike", "scooter", "two wheeler", "two-wheeler"]):
+        return "motorcycle"
+
+    if any(term in q for term in ["private car", "car", "cars", "suv", "sedan", "hatchback"]):
+        return "private_car"
+
+    return None
+
+
+def _infer_restriction_only(question: str, restriction_only: bool) -> bool:
+    """Infer whether the user is asking specifically about restrictions/exclusions."""
+    if restriction_only:
+        return True
+
+    q = question.lower()
+    restriction_terms = [
+        "restriction",
+        "restrictions",
+        "restricted",
+        "not covered",
+        "excluded",
+        "exclusion",
+        "exclusions",
+        "limit",
+        "limits",
+        "limitation",
+        "limitations",
+        "conditions apply",
+        "prohibited",
+        "prohibition",
+    ]
+    return any(term in q for term in restriction_terms)
+
+
 def answer_question(
     question: str,
     vehicle_category: Optional[str] = None,
@@ -38,23 +108,27 @@ def answer_question(
         - answer: Final verified answer with citations
         - evidence_map: List of evidence objects with chunk content, metadata, etc.
     """
+    # Infer filters from the question text when not explicitly provided
+    inferred_category = _infer_vehicle_category(question, vehicle_category)
+    inferred_restriction_only = _infer_restriction_only(question, restriction_only)
+
     # Enhance question with vehicle category context if specified
     enhanced_question = question
-    if vehicle_category:
+    if inferred_category:
         category_context = {
             "private_car": "Focus on private cars and passenger vehicles.",
             "motorcycle": "Focus on motorcycles, motorbikes, and two-wheelers.",
-            "motor_vehicle": "Focus on all types of motor vehicles.",
+            "motor_vehicle": "Focus on commercial and other motor vehicles.",
         }
-        normalized_category = vehicle_category.lower().strip()
+        normalized_category = inferred_category.lower().strip()
         if normalized_category in ["private_car", "car", "private car"]:
             enhanced_question = f"{category_context['private_car']} {question}"
         elif normalized_category in ["motorcycle", "bike", "motorcycles", "bikes"]:
             enhanced_question = f"{category_context['motorcycle']} {question}"
-        elif normalized_category in ["motor_vehicle", "all", "motor vehicles"]:
+        elif normalized_category in ["motor_vehicle", "all", "motor vehicles", "commercial"]:
             enhanced_question = f"{category_context['motor_vehicle']} {question}"
     
-    if restriction_only:
+    if inferred_restriction_only:
         enhanced_question = f"Focus on restrictions and limitations. {enhanced_question}"
     
     # Run multi-agent QA graph

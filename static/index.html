@@ -1,403 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evidence-Aware RAG System | Motor Vehicle Policy QA</title>
-  <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            opacity: 0.9;
-            font-size: 1.1em;
-        }
-
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 20px;
-            padding: 30px;
-            min-height: 600px;
-        }
-
-        .left-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .right-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .search-section {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 8px;
-            border: 2px solid #e9ecef;
-        }
-
-        .search-section h2 {
-            margin-bottom: 15px;
-            color: #333;
-            font-size: 1.5em;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #555;
-        }
-
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            font-size: 1em;
-            transition: border-color 0.3s;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        textarea {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            font-size: 1em;
-            min-height: 120px;
-            font-family: inherit;
-            resize: vertical;
-            transition: border-color 0.3s;
-        }
-
-        textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .checkbox-group input[type="checkbox"] {
-            width: auto;
-            cursor: pointer;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 14px 30px;
-            border-radius: 6px;
-            font-size: 1.1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            width: 100%;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .answer-section {
-            background: #fff;
-            padding: 25px;
-            border-radius: 8px;
-            border: 2px solid #e9ecef;
-            flex: 1;
-        }
-
-        .answer-section h2 {
-            margin-bottom: 15px;
-            color: #333;
-            font-size: 1.5em;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .debug-toggle {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.9em;
-        }
-
-        .debug-toggle input[type="checkbox"] {
-            width: auto;
-            cursor: pointer;
-        }
-
-        .answer-content {
-            line-height: 1.8;
-            font-size: 1.1em;
-            color: #333;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 6px;
-            min-height: 200px;
-        }
-
-        .answer-content.loading {
-            color: #666;
-            font-style: italic;
-        }
-
-        .citation {
-            background: #667eea;
-            color: white;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 0.85em;
-            font-weight: 600;
-            cursor: pointer;
-            display: inline-block;
-            margin: 0 2px;
-            transition: all 0.2s;
-            position: relative;
-        }
-
-        .citation:hover {
-            background: #764ba2;
-            transform: scale(1.1);
-            z-index: 10;
-        }
-
-        .citation.active {
-            background: #ff6b6b;
-            box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
-        }
-
-        .evidence-panel {
-            background: #fff;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            padding: 20px;
-            max-height: 500px;
-            overflow-y: auto;
-        }
-
-        .evidence-panel h3 {
-            margin-bottom: 15px;
-            color: #333;
-            font-size: 1.3em;
-        }
-
-        .evidence-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9em;
-            margin-top: 10px;
-        }
-
-        .evidence-table th {
-            background: #667eea;
-            color: white;
-            padding: 12px 8px;
-            text-align: left;
-            position: sticky;
-            top: 0;
-            z-index: 5;
-            font-weight: 600;
-            font-size: 0.95em;
-        }
-
-        .evidence-table th:first-child {
-            border-top-left-radius: 6px;
-        }
-
-        .evidence-table th:last-child {
-            border-top-right-radius: 6px;
-        }
-
-        .evidence-table td {
-            padding: 12px 8px;
-            border-bottom: 1px solid #e9ecef;
-            word-break: break-word;
-            max-width: 200px;
-        }
-
-        .evidence-table td:first-child {
-            font-family: monospace;
-            font-size: 0.85em;
-            color: #555;
-        }
-
-        .evidence-table tr {
-            transition: background-color 0.2s;
-        }
-
-        .evidence-table tr:hover {
-            background: #f0f4ff;
-            cursor: pointer;
-        }
-
-        .evidence-table tr.selected {
-            background: #e7f3ff;
-            border-left: 3px solid #667eea;
-        }
-
-        .evidence-table tr.empty-state td {
-            text-align: center;
-            padding: 30px;
-            color: #999;
-            font-style: italic;
-        }
-
-        .chunk-viewer {
-            background: #fff;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            padding: 20px;
-            max-height: 400px;
-            overflow-y: auto;
-            min-height: 200px;
-        }
-
-        .chunk-viewer h3 {
-            margin-bottom: 15px;
-            color: #333;
-            font-size: 1.3em;
-        }
-
-        .chunk-content {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 6px;
-            line-height: 1.8;
-            font-size: 0.95em;
-            color: #333;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            border-left: 4px solid #667eea;
-            margin-bottom: 10px;
-        }
-
-        .chunk-meta {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #ddd;
-            font-size: 0.85em;
-            color: #666;
-        }
-
-        .chunk-meta strong {
-            color: #667eea;
-        }
-
-        .highlight {
-            background: #ffd93d;
-            padding: 2px 4px;
-            border-radius: 3px;
-            font-weight: 600;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #999;
-            font-style: italic;
-        }
-
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .error-message {
-            background: #ffe6e6;
-            color: #d32f2f;
-            padding: 15px;
-            border-radius: 6px;
-            margin-top: 15px;
-            border-left: 4px solid #d32f2f;
-        }
-
-        @media (max-width: 1024px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-        }
-  </style>
+    <title>Evidence-Aware RAG | Motor Vehicle Policy Q&A</title>
+    <link rel="stylesheet" href="static/styles.css">
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔍 Evidence-Aware RAG System</h1>
-            <p>Motor Vehicle Policy Question & Answering with Citation Evidence</p>
+            <h1>Motor Vehicle Insurance Policy Q&A with Cited Evidence</h1>
         </div>
 
         <div class="main-content">
@@ -415,21 +27,6 @@
                             ></textarea>
                         </div>
                         
-                        <div class="form-group">
-                            <label for="vehicleCategory">Vehicle Category (Optional):</label>
-                            <select id="vehicleCategory" name="vehicleCategory">
-                                <option value="">All Vehicles</option>
-                                <option value="private_car">Private Cars</option>
-                                <option value="motorcycle">Motorcycles</option>
-                                <option value="motor_vehicle">Motor Vehicles (All)</option>
-                            </select>
-                        </div>
-
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="restrictionOnly" name="restrictionOnly">
-                            <label for="restrictionOnly">Restrictions Only</label>
-                        </div>
-
                         <button type="submit" class="btn" id="submitBtn">
                             <span id="submitText">Get Answer</span>
                         </button>
@@ -437,13 +34,7 @@
                 </div>
 
                 <div class="answer-section">
-                    <h2>
-                        Answer
-                        <div class="debug-toggle">
-                            <input type="checkbox" id="debugMode">
-                            <label for="debugMode">Debug Mode</label>
-                        </div>
-                    </h2>
+                    <h2>Answer</h2>
                     <div id="answerContent" class="answer-content empty-state">
                         Enter a question above to get started...
                     </div>
@@ -453,7 +44,7 @@
 
             <div class="right-panel">
                 <div class="evidence-panel">
-                    <h3>📋 Evidence Panel</h3>
+                    <h3>Evidence Panel</h3>
                     <table class="evidence-table" id="evidenceTable">
                         <thead>
                             <tr>
@@ -471,7 +62,7 @@
                 </div>
 
                 <div class="chunk-viewer">
-                    <h3>📄 Chunk Viewer</h3>
+                    <h3>Chunk Viewer</h3>
                     <div id="chunkViewerContent" class="empty-state">
                         Click a citation or evidence row to view chunk details
                     </div>
@@ -490,18 +81,52 @@
             e.preventDefault();
             
             const question = document.getElementById('question').value.trim();
-            const vehicleCategory = document.getElementById('vehicleCategory').value;
-            const restrictionOnly = document.getElementById('restrictionOnly').checked;
 
             if (!question) {
                 showError('Please enter a question');
                 return;
             }
 
-            await fetchAnswer(question, vehicleCategory, restrictionOnly);
+            await fetchAnswer(question);
         });
 
-        async function fetchAnswer(question, vehicleCategory, restrictionOnly) {
+        function inferVehicleCategory(question) {
+            const q = question.toLowerCase();
+
+            // Commercial vehicle-oriented keywords
+            const commercialTerms = [
+                'commercial vehicle', 'commercial vehicles', 'goods vehicle', 'goods carrier',
+                'truck', 'lorry', 'pickup', 'pickup truck', 'delivery van', 'van',
+                'bus', 'coach', 'taxi', 'cab', 'three wheeler', '3 wheeler'
+            ];
+
+            if (commercialTerms.some(term => q.includes(term))) {
+                // Map commercial segment onto the existing backend category for motor vehicles
+                return 'motor_vehicle';
+            }
+
+            if (q.includes('motorcycle') || q.includes('bike') || q.includes('scooter')) {
+                return 'motorcycle';
+            }
+
+            if (q.includes('private car') || q.includes('car') || q.includes('suv') || q.includes('sedan')) {
+                return 'private_car';
+            }
+
+            return null; // let backend handle general cases
+        }
+
+        function inferRestrictionOnly(question) {
+            const q = question.toLowerCase();
+            const restrictionTerms = [
+                'restriction', 'restrictions', 'restricted',
+                'not covered', 'excluded', 'exclusion', 'exclusions',
+                'limit', 'limits', 'limitations', 'conditions apply'
+            ];
+            return restrictionTerms.some(term => q.includes(term));
+        }
+
+        async function fetchAnswer(question) {
             const submitBtn = document.getElementById('submitBtn');
             const submitText = document.getElementById('submitText');
             const answerContent = document.getElementById('answerContent');
@@ -518,8 +143,8 @@
             try {
                 const payload = {
                     question: question,
-                    vehicle_category: vehicleCategory || null,
-                    restriction_only: restrictionOnly
+                    vehicle_category: inferVehicleCategory(question),
+                    restriction_only: inferRestrictionOnly(question)
                 };
 
                 const response = await fetch(`${API_BASE}/qa`, {
@@ -780,22 +405,7 @@
                 return;
             }
 
-            const debugMode = document.getElementById('debugMode').checked;
-            
             let html = '';
-            
-            if (debugMode) {
-                html += `<div class="chunk-meta" style="background: #fff3cd; padding: 10px; border-radius: 4px; margin-bottom: 15px;">`;
-                html += `<strong>🔍 Debug Info:</strong><br>`;
-                html += `Chunk ID: <code>${citation.chunk_id || 'N/A'}</code><br>`;
-                html += `Index: ${citation.index || 'N/A'}<br>`;
-                html += `Full Source: ${citation.full_source || citation.source || 'N/A'}<br>`;
-                if (citation.metadata) {
-                    html += `Metadata: <pre style="font-size: 0.8em; margin-top: 5px;">${JSON.stringify(citation.metadata, null, 2)}</pre>`;
-                }
-                html += `</div>`;
-            }
-
             html += `<div class="chunk-content">`;
             
             // Get content - prefer full content over snippet
@@ -876,18 +486,6 @@
                 errorMessage.innerHTML = '';
             }, 5000);
         }
-
-        // Debug mode toggle
-        document.getElementById('debugMode').addEventListener('change', () => {
-            if (currentAnswer) {
-                displayAnswer(currentAnswer, currentCitations);
-            }
-            // Update chunk viewer if one is displayed
-            const selectedRow = document.querySelector('.evidence-table tr.selected');
-            if (selectedRow) {
-                showChunk(selectedRow.dataset.chunkId);
-            }
-        });
   </script>
 </body>
 </html>

@@ -29,7 +29,7 @@ def retrieve_with_filter(
         vehicle_category: Optional filter for vehicle type:
             - "private_car" or "car" - Private cars
             - "motorcycle" or "bike" - Motorcycles
-            - "all_vehicles" or "motor_vehicle" - All motor vehicles
+            - "motor_vehicle" (and commercial synonyms) - Commercial / all motor vehicles
             - None - No category filter
         restriction_type: Optional filter for restriction type:
             - "restriction" - Documents about restrictions
@@ -54,7 +54,15 @@ def retrieve_with_filter(
             metadata_filter["vehicle_type"] = "private_car"
         elif category_normalized in ["motorcycle", "bike", "motorcycles", "bikes", "motorbike"]:
             metadata_filter["vehicle_type"] = "motorcycle"
-        elif category_normalized in ["all_vehicles", "motor_vehicle", "vehicles", "motor vehicles"]:
+        elif category_normalized in [
+            "all_vehicles",
+            "motor_vehicle",
+            "vehicles",
+            "motor vehicles",
+            "commercial",
+            "commercial_vehicle",
+            "commercial vehicles",
+        ]:
             metadata_filter["vehicle_type"] = "motor_vehicle"
     
     if restriction_type:
@@ -200,8 +208,16 @@ def _enhance_query_with_category(query: str, vehicle_category: Optional[str] = N
         context = "private car private vehicle passenger car"
     elif category_normalized in ["motorcycle", "bike", "motorcycles", "bikes", "motorbike"]:
         context = "motorcycle motorbike bike two-wheeler"
-    elif category_normalized in ["all_vehicles", "motor_vehicle", "vehicles", "motor vehicles"]:
-        context = "motor vehicle automotive vehicle car motorcycle"
+    elif category_normalized in [
+        "all_vehicles",
+        "motor_vehicle",
+        "vehicles",
+        "motor vehicles",
+        "commercial",
+        "commercial_vehicle",
+        "commercial vehicles",
+    ]:
+        context = "commercial vehicle goods vehicle truck bus taxi motor vehicle automotive vehicle"
     else:
         return query
     
