@@ -1,3 +1,1 @@
-
-
-uv run uvicorn src.app.api:app --reload
+py -m uvicorn main:app --reload

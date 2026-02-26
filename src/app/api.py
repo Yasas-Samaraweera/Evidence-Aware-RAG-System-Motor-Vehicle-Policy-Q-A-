@@ -31,17 +31,17 @@ app.add_middleware(
 
 # Mount static files for UI
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-STATIC_DIR = os.path.join(PROJECT_ROOT, "static")
+UI_DIR = os.path.join(PROJECT_ROOT, "public")
 
-if os.path.exists(STATIC_DIR):
-    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+if os.path.exists(UI_DIR):
+    app.mount("/static", StaticFiles(directory=UI_DIR), name="static")
     # Also serve index.html at root
     @app.get("/")
     async def read_root():
-        index_path = os.path.join(STATIC_DIR, "index.html")
+        index_path = os.path.join(UI_DIR, "index.html")
         if os.path.exists(index_path):
             return FileResponse(index_path)
-        return {"message": "UI not found. Please ensure static/index.html exists."}
+        return {"message": "UI not found. Please ensure public/index.html exists."}
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(
