@@ -1,0 +1,17 @@
+# Files/folders excluded from Vercel deployment uploads.
+# This keeps the serverless bundle small and avoids shipping local/runtime artifacts.
+
+.venv/
+__pycache__/
+**/__pycache__/
+
+# Local data / uploads (use Pinecone + /tmp on Vercel instead)
+data/
+
+# Local tooling
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.vscode/
+.env
+
