@@ -122,7 +122,10 @@ async def index_pdf(file: UploadFile = File(...)) -> dict:
             detail="Only PDF files are supported.",
         )
 
-    upload_dir = Path("data/uploads")
+    # Use configurable upload directory so it works on Vercel's read-only filesystem.
+    # Locally this defaults to "data/uploads"; on Vercel set UPLOAD_DIR=/tmp/uploads.
+    upload_root = os.getenv("UPLOAD_DIR", "data/uploads")
+    upload_dir = Path(upload_root)
     upload_dir.mkdir(parents=True, exist_ok=True)
 
     file_path = upload_dir / file.filename
