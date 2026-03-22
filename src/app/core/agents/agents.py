@@ -11,6 +11,7 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.documents import Document
 
 from ..llm.factory import create_chat_model
+from ..retrieval.vector_store import retrieve
 from .prompts import (
     RETRIEVAL_SYSTEM_PROMPT,
     SUMMARIZATION_SYSTEM_PROMPT,
@@ -29,8 +30,28 @@ def _extract_last_ai_content(messages: List[object]) -> str:
     return ""
 
 
+def _documents_from_tool_message(msg: ToolMessage) -> List[Document]:
+    """Extract Document objects from a ToolMessage (content_and_artifact tools).
+
+    LangChain may attach the artifact on ``artifact`` or under
+    ``additional_kwargs["artifact"]`` depending on version.
+    """
+    artifact = getattr(msg, "artifact", None)
+    if artifact is None:
+        extra = getattr(msg, "additional_kwargs", None)
+        if isinstance(extra, dict):
+            artifact = extra.get("artifact")
+    if not artifact:
+        return []
+    if isinstance(artifact, list):
+        return [doc for doc in artifact if isinstance(doc, Document)]
+    if isinstance(artifact, Document):
+        return [artifact]
+    return []
+
+
 # Define agents at module level for reuse
-# Include all vehicle-specific retrieval tools for MCP-style filtering
+# Vehicle-specific retrieval tools use metadata filtering
 retrieval_agent = create_agent(
     model=create_chat_model(),
     tools=[
@@ -62,65 +83,34 @@ def retrieval_node(state: QAState) -> QAState:
     This node:
     - Sends the user's question to the Retrieval Agent.
     - The agent uses the attached retrieval tool to fetch document chunks.
-    - Extracts the tool's content (CONTEXT string) from the ToolMessage.
-    - Extracts Document objects from tool artifacts for evidence mapping.
-    - Builds chunk metadata mapping for citation resolution.
-    - Stores the consolidated context string in `state["context"]`.
-    
-    Evidence-aware enhancement:
-    - Preserves full Document objects for evidence mapping
-    - Builds comprehensive chunk metadata for citation resolution
+    - Reads the latest ToolMessage (serialized CONTEXT string + artifact Documents).
+    - Falls back to a direct vector lookup if artifacts are missing.
+    - Builds chunk metadata for citation resolution and stores `state["context"]`.
     """
     question = state["question"]
 
     result = retrieval_agent.invoke({"messages": [HumanMessage(content=question)]})
-
     messages = result.get("messages", [])
+
     context = ""
     retrieved_docs: List[Document] = []
 
-    # Extract content and artifacts from ToolMessage
-    # The retrieval_tool uses response_format="content_and_artifact"
+    # Latest ToolMessage wins (most recent tool call); tools use content_and_artifact
     for msg in reversed(messages):
         if isinstance(msg, ToolMessage):
             context = str(msg.content)
-            
-            # Try multiple ways to extract artifact (LangChain versions may differ)
-            artifact = None
-            
-            # Method 1: Direct artifact attribute
-            if hasattr(msg, "artifact") and msg.artifact:
-                artifact = msg.artifact
-            # Method 2: Check additional_metadata
-            elif hasattr(msg, "additional_kwargs") and isinstance(msg.additional_kwargs, dict):
-                artifact = msg.additional_kwargs.get("artifact")
-            # Method 3: Check tool_call_id mapping (some versions store artifacts separately)
-            elif hasattr(msg, "tool_call_id") and msg.tool_call_id:
-                # Artifacts might be stored in a separate registry
-                pass
-            
-            # Process artifact if found
-            if artifact:
-                if isinstance(artifact, list):
-                    retrieved_docs = [doc for doc in artifact if isinstance(doc, Document)]
-                elif isinstance(artifact, Document):
-                    retrieved_docs = [artifact]
-            
+            retrieved_docs = _documents_from_tool_message(msg)
             break
 
-    # Fallback: If we didn't get documents from artifact, retrieve them directly
-    # This ensures we always have Document objects for evidence mapping
     if not retrieved_docs:
-        from ..retrieval.vector_store import retrieve
         retrieved_docs = retrieve(question, k=4)
 
-    # Build chunk metadata mapping from retrieved documents
     chunk_metadata = build_chunk_metadata(retrieved_docs) if retrieved_docs else {}
 
     return {
         "context": context,
-        "retrieved_documents": retrieved_docs if retrieved_docs else None,
-        "chunk_metadata": chunk_metadata if chunk_metadata else None,
+        "retrieved_documents": retrieved_docs or None,
+        "chunk_metadata": chunk_metadata or None,
     }
 
 

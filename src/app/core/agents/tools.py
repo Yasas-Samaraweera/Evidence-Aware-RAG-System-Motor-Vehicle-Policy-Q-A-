@@ -4,7 +4,7 @@ from langchain_core.tools import tool
 
 from ..retrieval.vector_store import retrieve
 from ..retrieval.serialization import serialize_chunks
-from ..retrieval.mcp_retrieval import (
+from ..retrieval.filtered_retrieval import (
     retrieve_private_cars,
     retrieve_motorcycles,
     retrieve_motor_vehicles,

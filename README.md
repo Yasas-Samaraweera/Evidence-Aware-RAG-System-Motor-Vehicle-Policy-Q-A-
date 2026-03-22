@@ -327,7 +327,7 @@ START → retrieval_node → summarization_node → verification_node → END
 
 **Files**:
 - `src/app/core/retrieval/vector_store.py`: Pinecone integration
-- `src/app/core/retrieval/mcp_retrieval.py`: MCP-style filtering
+- `src/app/core/retrieval/filtered_retrieval.py`: metadata filtering for vehicle categories
 - `src/app/core/retrieval/serialization.py`: Chunk serialization
 
 **Features**:
